@@ -1,0 +1,180 @@
+const ChatModel = require('../models/ChatModel');
+const UserModel = require('../models/UserModel');
+const { NotFoundError, BadRequestError, UnAuthorizedError } = require('../middleware/error/httpErrors')
+
+
+const accessChat = async (req, res, next) => {
+    try {
+        const { id } = req.body;
+        const userId = req.user?.id;
+
+        if (!id) throw new BadRequestError('User is not Provided');
+
+        const chat = await ChatModel.findOne({
+            isGroupChat: false,
+            users: { $all: [userId, id] }
+        })
+            .populate('users', 'firstName lastName img ')
+            .populate('latestMessage')
+        if (chat) {
+            return res.json(chat);
+        }
+
+        // if no chat create a new chat 
+        const newChat = await ChatModel.create({
+            chatName: 'One-on-One',
+            isGroupChat: false,
+            users: [userId, id]
+        });
+
+        const fullChat = await ChatModel.findById(newChat._id).populate('users', 'firstName lastName img');
+        return res.status(200).json(fullChat);
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+
+const getChat = async (req, res, next) => {
+    try {
+        const userId = req.user?.id
+        const chats = await ChatModel.find({ users: { $elemMatch: { $eq: userId } } })
+            .populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole ')
+            .populate('latestMessage')
+            .sort({ createdAt: -1 })
+
+        return res.status(200).json({ status: true, chats })
+    }
+    catch (error) {
+        return next(error)
+    }
+}
+
+
+// === createGroup ===
+
+const createGroup = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { name, users } = req.body;
+        if (!name || !users) throw new BadRequestError('Fill All fields')
+        if (users.length < 2) throw new BadRequestError('More then 2 people to chat in group')
+        users.push(userId);
+        const groupChat = await ChatModel.create({
+            chatName: name,
+            users,
+            isGroupChat: true,
+            groupAdmin: userId
+        });
+
+        const fullGroup = await ChatModel.findById(groupChat._id)
+            .populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole');
+
+        return res.status(200).json({ status: true, fullGroup })
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+
+// ==== Rename Group ===
+
+const renameGroup = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { chatId, chatName } = req.body
+
+        const chat = await ChatModel.findById(chatId);
+        if (chat.groupAdmin.toString() !== userId) {
+            throw new UnAuthorizedError('You are not Authorized to Rename Group')
+        }
+
+        const updateChat = await ChatModel.findByIdAndUpdate(chatId,
+            { chatName },
+            { new: true }
+        ).populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole')
+        if (!updateChat) throw new NotFoundError('Invalid ChatId')
+
+        return res.status(200).json({
+            status: true,
+            updateChat
+        })
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+
+//  === Add To Group ===
+
+const addToGroup = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { chatId, user } = req.body;
+        const chat = await ChatModel.findById(chatId);
+        if (chat.groupAdmin.toString() !== userId) throw new UnAuthorizedError('You are UnAuthorized to add someone ')
+        const updateChat = await ChatModel.findByIdAndUpdate(
+            chatId,
+            {
+                $push: { users: user }
+            },
+            { new: true }
+        ).populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole')
+
+        if (!updateChat) throw new BadRequestError('Invalid userId')
+
+        return res.status(200).json({
+            status: true,
+            updateChat
+        })
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+
+//  === Remove From Group ===
+
+const removeFromGroup = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { chatId, user } = req.body;
+        const chat = await ChatModel.findById(chatId);
+        if (chat.groupAdmin.toString() !== userId) throw new UnAuthorizedError('You are to Authorized to Remove someOne')
+        const updateChat = await ChatModel.findByIdAndUpdate(chatId,
+            {
+                $pull: { users: user }
+            },
+            { new: true }
+        ).populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole')
+
+        if (!updateChat) throw new NotFoundError('Invalid Chat Id')
+        return res.status(200).json({
+            status: true,
+            updateChat
+        })
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+
+
+module.exports = {
+    createGroup,
+    accessChat,
+    getChat,
+    addToGroup,
+    renameGroup,
+    removeFromGroup
+}
