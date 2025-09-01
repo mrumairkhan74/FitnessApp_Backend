@@ -6,11 +6,12 @@ const {
     UnauthorizedError,
     NotFoundError,
 } = require('../middleware/error/httpErrors');
+const { notifyUser } = require('../utils/NotificationService')
 
 const UserModel = require('../models/UserModel');
 const { MemberModel, StaffModel } = require('../models/Discriminators');
 
-// ================= CREATE APPOINTMENT =================
+// ========== CREATE APPOINTMENT ===========
 // Only staff can create appointments
 const createAppointment = async (req, res, next) => {
     try {
@@ -69,6 +70,15 @@ const createAppointment = async (req, res, next) => {
             specialNote,
             endDate,
         });
+        for (const member of memberDocs) {
+            await notifyUser(
+                member._id,
+                member.email,
+                "New Appointment Scheduled",
+                `You have a new ${appointment.appointmentType} appointment on ${appointment.date} at ${appointment.timeSlot}.`,
+                "appointment"
+            );
+        }
 
         // push appointment id into members
         await MemberModel.updateMany(
@@ -147,7 +157,7 @@ const deleteAppointment = async (req, res, next) => {
         if (req.user.role === 'member') {
             // member can only cancel (not delete from db)
             if (!appointment.members.some(m => m.toString() === userId)) {
-                throw new UnauthorizedError("You cannot cancel this appointment");
+                throw new UnauthorizedError("You cannot delete this appointment");
             }
 
             appointment.status = 'cancelled';
@@ -246,6 +256,29 @@ const cancelAppointment = async (req, res, next) => {
         appointment.cancelledBy = userId
         await appointment.save();
 
+        const creator = await StaffModel.findById(appointment.createdBy);
+        const members = await MemberModel.find({ _id: { $in: appointment.members } });
+
+        for (const m of members) {
+            await notifyUser(
+                m._id,
+                m.email,
+                "Appointment Cancelled",
+                `Your Appointment scheduled for ${appointment.date} at ${appointment.timeSlot} has been Cancelled `,
+                "appointment"
+            )
+        }
+        if (creator) {
+            await notifyUser(
+                creator._id,
+                creator.email,
+                "Appointment Cancelled",
+                `The Appointment you created for ${appointment.date} has been cancelled `,
+                "appointment"
+            )
+        }
+
+
         res.json({ message: "Appointment cancelled successfully" });
     } catch (err) {
         next(err);
@@ -256,20 +289,34 @@ const confirmedAppointment = async (req, res, next) => {
         const userId = req.user?.id; // logged-in member
         const { id } = req.params;
 
-        const appointment = await AppointmentModel.findById(id);
+        const appointment = await AppointmentModel.findById(id).populate('members', 'firstName lastName');
         if (!appointment) {
             return res.status(404).json({ message: "Appointment not found" });
         }
 
         // make sure this appointment belongs to the member
         if (!appointment.members.some((m) => m._id.toString() === userId)) {
-            return res.status(403).json({ message: "You cannot confirmed this appointment" });
+            return res.status(403).json({ message: "You cannot confirm this appointment" });
         }
 
         // update status instead of deleting
         appointment.status = "confirmed";
-        appointment.cancelledBy = userId
+        appointment.confirmedBy = userId
         await appointment.save();
+
+        
+        const creator = await StaffModel.findById(appointment.createdBy)
+        const confirmingMember = appointment.members.find(m => m._id.toString() === userId);
+        if (creator) {
+            await notifyUser(
+                creator._id,
+                creator.email,
+                "Appointment Confirmed",
+                `The appointment you created for ${appointment.date} at ${appointment.timeSlot} has been confirmed by ${confirmingMember.firstName} ${confirmingMember.lastName}.`,
+                "appointment"
+            );
+        }
+
 
         res.json({ message: "Appointment Confirmed successfully" });
     } catch (err) {
