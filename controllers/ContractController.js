@@ -97,7 +97,22 @@ const myContract = async (req, res, next) => {
     }
 };
 
-
+const allContract = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const contract = await ContractModel.find()
+            .populate('member', 'firstName lastName email startDate')
+            .populate('createdBy', 'firstName lastName staffRole role')
+            .populate('lead', 'name email')
+        return res.status(200).json({
+            success: true,
+            contract
+        })
+    }
+    catch (error) {
+        next(error)
+    }
+}
 
 const updateContract = async (req, res, next) => {
     try {
@@ -203,5 +218,6 @@ module.exports = {
     myContract,
     updateContract,
     cancelMembership,
-    keepMembership
+    keepMembership,
+    allContract
 };

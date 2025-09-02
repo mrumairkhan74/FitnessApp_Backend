@@ -1,4 +1,5 @@
-const express = require('express')
+const express = require('express');
+const rateLimit = require('express-rate-limit')
 const adminRoutes = require('./AdminRoutes')
 const StaffRoutes = require('./StaffRoutes');
 const MemberRoutes = require('./MemberRoutes');
@@ -21,9 +22,31 @@ const NotificationRoutes = require('./NotificationRoutes');
 
 const router = express.Router();
 
-router.use('/', adminRoutes)
-router.use('/staff', StaffRoutes)
-router.use('/member', MemberRoutes)
+const strictLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: "Too many attempts, try again later." },
+    standardHeaders: true, // send rate limit info in headers
+    legacyHeaders: false,
+});
+
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: { error: "Too many requests, slow down." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+
+
+
+
+
+
+router.use('/', strictLimiter, adminRoutes)
+router.use('/staff', generalLimiter, StaffRoutes)
+router.use('/member', generalLimiter, MemberRoutes)
 router.use('/appointment', AppointmentRoutes)
 router.use('/lead', LeadRoutes)
 router.use('/relation', RelationRoutes)
@@ -37,7 +60,7 @@ router.use('/chat', ChatRoutes)
 router.use('/message', MessageRoutes)
 router.use('/block', BlockedRoutes)
 router.use('/metaads', MetaAdsRoutes)
-router.use('/payment', PaymentRoutes)
+router.use('/payment', strictLimiter, PaymentRoutes)
 router.use('/vacation', IdlePeriodRoutes)
 router.use('/notification', NotificationRoutes)
 

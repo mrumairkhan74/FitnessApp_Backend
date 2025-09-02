@@ -11,8 +11,8 @@ router.get('/', verifyAccessToken, getLead);
 router.get('/myLeads', verifyAccessToken, getLeadsByUser);
 router.get('/:id', verifyAccessToken, getLeadById);
 router.post('/create', verifyAccessToken, isStaff, createLead);
-router.put('/:id', verifyAccessToken, updateLeadById);
-router.delete('/:id', verifyAccessToken, deleteLead);
+router.put('/:id', verifyAccessToken, isStaff, updateLeadById);
+router.delete('/:id', verifyAccessToken, isStaff, deleteLead);
 
 
 module.exports = router

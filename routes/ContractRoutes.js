@@ -1,11 +1,12 @@
 const express = require('express');
 const { verifyAccessToken } = require('../middleware/verifyToken');
-const { createContract, getContractPdfById, downloadContractPdf,keepMembership,cancelMembership,myContract } = require('../controllers/ContractController');
-const { isStaff } = require('../middleware/RoleCheck');
+const { createContract, getContractPdfById, downloadContractPdf, keepMembership, cancelMembership, myContract, allContract } = require('../controllers/ContractController');
+const { isStaff, isAdmin } = require('../middleware/RoleCheck');
 
 const router = express.Router();
 
 router.post('/create', verifyAccessToken, isStaff, createContract);
+router.get('/', verifyAccessToken, isAdmin, allContract);
 router.get('/myContract', verifyAccessToken, myContract);
 router.get('/:id', verifyAccessToken, getContractPdfById);
 router.get('/download/:id', verifyAccessToken, downloadContractPdf);

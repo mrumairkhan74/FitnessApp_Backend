@@ -8,7 +8,7 @@ const { isStaff } = require('../middleware/RoleCheck');
 const router = express.Router();
 
 router.post('/create', upload.single('img'), isStaff, verifyAccessToken, createProduct)
-router.delete('/:id', verifyAccessToken, DeleteProduct)
+router.delete('/:id', verifyAccessToken, isStaff, DeleteProduct)
 router.get('/:id', verifyAccessToken, getProductsById)
 router.get('/', verifyAccessToken, getProducts)
 router.get('/myProducts', verifyAccessToken, myProducts)

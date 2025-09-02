@@ -103,4 +103,21 @@ const updateStudio = async (req, res, next) => {
 };
 
 
-module.exports = { updateStudio }
+const getStudio = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const studio = await StudioModel.find().populate('createdBy', 'firstName lastName email role staffRole');
+        return res.status(200).json({
+            success: true,
+            studio
+        })
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+module.exports = {
+    updateStudio,
+    getStudio
+}

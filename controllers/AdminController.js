@@ -40,9 +40,9 @@ const createAdmin = async (req, res, next) => {
         const securePassword = await hashedPassword(password);
 
 
-        if (!req.file) throw new NotFoundError("Image Not Uploaded");
 
-        const cloudinaryResult = await uploadToCloudinary(req.file.buffer);
+
+
         // role automatically set to 'admin' via discriminator
         const admin = await AdminModel.create({
             firstName,
@@ -55,10 +55,6 @@ const createAdmin = async (req, res, next) => {
             zipCode,
             street,
             about,
-            img: {
-                url: cloudinaryResult.secure_url,
-                public_id: cloudinaryResult.public_id
-            },
             email,
             password: securePassword
         });
@@ -70,7 +66,6 @@ const createAdmin = async (req, res, next) => {
             id: admin.id,
             email: admin.email,
             role: admin.role,
-            img: admin.img?.url
         });
         admin.refreshToken = RefreshToken;
         await admin.save();
@@ -87,7 +82,6 @@ const createAdmin = async (req, res, next) => {
                 id: admin.id,
                 email: admin.email,
                 role: admin.role,
-                img: admin.img?.url
             }
         });
 
@@ -126,7 +120,6 @@ const loginAdmin = async (req, res, next) => {
             message: "Login Successfully",
             token: AccessToken,
             admin: {
-                token: AccessToken,
                 firstName: admin.firstName,
                 lastName: admin.lastName,
                 username: admin.username,
@@ -181,8 +174,6 @@ const updateAdminById = async (req, res, next) => {
 
 const getUsers = async (req, res, next) => {
     try {
-        // const { role } = req.query;
-        // const filter = role ? { role } : {};
         const users = await UserModel.find().select('-password')
         if (!users.length) throw new NotFoundError("No user Available")
         return res.status(200).json({
