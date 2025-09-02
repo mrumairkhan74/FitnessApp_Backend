@@ -10,20 +10,20 @@ async function generateContractPDF(contractData, logoUrl) {
     doc.on("error", reject);
 
     try {
-      // ---------- HEADER ----------
+      // ---- HEADER ---
       if (logoUrl) {
         doc.image(logoUrl, 450, 40, { width: 100 });
       }
       doc.fontSize(20).text("Studio Contract", 50, 50);
       doc.moveDown(2);
 
-      // ---------- SECTION: Studio Info ----------
+      // --- Studio Info ---
       sectionTitle(doc, "Studio Information");
       fieldLine(doc, "Studio Name", contractData.studioName);
       fieldLine(doc, "Studio Owner", contractData.studioOwnerName);
       doc.moveDown(1.5);
 
-      // ---------- SECTION: Member Info ----------
+      // --- Member Info ---
       sectionTitle(doc, "Member Information");
       fieldLine(doc, "Full Name", contractData.fullName);
       fieldLine(doc, "Email", contractData.emailAdresse);
@@ -36,7 +36,7 @@ async function generateContractPDF(contractData, logoUrl) {
       fieldLine(doc, "Mobile", contractData.mobil);
       doc.moveDown(1.5);
 
-      // ---------- SECTION: Contract Details ----------
+      // ---- Contract Details -----
       sectionTitle(doc, "Contract Details");
       fieldLine(doc, "Duration", contractData.duration);
       fieldLine(doc, "Price per Week (€)", contractData.preisProWoche);
@@ -44,7 +44,8 @@ async function generateContractPDF(contractData, logoUrl) {
       fieldLine(doc, "Training Start", contractData.startDesTrainings);
       fieldLine(doc, "Cancellation Notice", contractData.kuendigungsfrist);
       doc.moveDown(1.5);
-      // ---------- SECTION: SEPA Details ----------
+
+      // ------ SEPA Details ------
       sectionTitle(doc, "SEPA Details");
       fieldLine(doc, "Full Name", contractData.fullName);
       fieldLine(doc, "Credit Institute", contractData.kreditinstitut);
@@ -53,7 +54,7 @@ async function generateContractPDF(contractData, logoUrl) {
       fieldLine(doc, "SEPA Reference Number", contractData.sepaMandate);
       doc.moveDown(1.5);
 
-      // ---------- SECTION: Terms ----------
+      // ----- Terms -----
       sectionTitle(doc, "Terms & Conditions");
       doc.fontSize(11).text(
         `After the minimum term expires, the contract will continue indefinitely 
@@ -64,18 +65,29 @@ the subsequent period are agreed in the "Contract remarks" text field.`,
       );
       doc.moveDown(2);
 
-      // ---------- SECTION: Fee Adjustments ----------
+      // -- Fee Adjustments --
       if (contractData.feeAdjustments) {
         sectionTitle(doc, "Fee Adjustments");
         doc.fontSize(12).text(contractData.feeAdjustments, { width: 500 });
         doc.moveDown(2);
       }
 
-      // ---------- SIGNATURE ----------
-      sectionTitle(doc, "Signature");
-      doc.text("Place, Date: ____________________", { continued: true });
-      doc.text("      Signature: ____________________");
-      doc.moveDown(2);
+      // --- SIGNATURE ---
+      if (contractData.signature) {
+        if (contractData.signature.startsWith("data:image")) {
+          // Base64 image
+          const signatureImage = Buffer.from(
+            contractData.signature.replace(/^data:image\/\w+;base64,/, ""),
+            "base64"
+          );
+          doc.image(signatureImage, 200, doc.y, { width: 120 });
+        } else {
+          // Typed text
+          doc.text(`Signature: ${contractData.signature}`);
+        }
+      } else {
+        doc.text("Signature: ____________________");
+      }
 
       // Footer
       doc.fontSize(9).fillColor("gray").text("This contract is valid without signature i.A.kom.", {

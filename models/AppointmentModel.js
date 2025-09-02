@@ -52,6 +52,10 @@ const AppointmentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    confirmedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'staff',

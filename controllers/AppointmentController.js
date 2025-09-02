@@ -83,8 +83,9 @@ const createAppointment = async (req, res, next) => {
         // push appointment id into members
         await MemberModel.updateMany(
             { _id: { $in: memberIds } },
-            { $push: { appointments: appointment._id } }
+            { $push: { appointments: appointment._id } },
         );
+
         await StaffModel.findByIdAndUpdate(
             staffId,
             { $push: { appointments: appointment._id } }
@@ -304,7 +305,7 @@ const confirmedAppointment = async (req, res, next) => {
         appointment.confirmedBy = userId
         await appointment.save();
 
-        
+
         const creator = await StaffModel.findById(appointment.createdBy)
         const confirmingMember = appointment.members.find(m => m._id.toString() === userId);
         if (creator) {

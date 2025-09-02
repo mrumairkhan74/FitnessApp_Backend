@@ -10,6 +10,9 @@ const AdminModel = UserModel.discriminator('admin', new mongoose.Schema({
 }));
 
 const MemberModel = UserModel.discriminator('member', new mongoose.Schema({
+    memberNumber: {
+        type: String,
+    },
     appointments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Appointment'
@@ -22,6 +25,14 @@ const MemberModel = UserModel.discriminator('member', new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Relation',
     }],
+    contract: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Contract',
+    },
+    idlePeriod: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'IdlePeriod',
+    },
 }))
 
 

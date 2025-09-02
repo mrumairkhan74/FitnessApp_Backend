@@ -11,14 +11,15 @@ const createBookTrial = async (req, res, next) => {
     const userId = req.user?.id;
 
     // validate relation, lead, member
-    const relationDoc = await RelationModel.findById(relation);
+    const [relationDoc, leadDoc, memberDoc] = await Promise.all([
+      RelationModel.findById(relation),
+      LeadModel.findById(lead),
+      MemberModel.findById(member)
+    ]);
+
     if (!relationDoc) throw new BadRequestError('Invalid Relation ID');
-
-    const leadDoc = await LeadModel.findById(lead);
-    if (!leadDoc) throw new BadRequestError("Invalid Lead ID");
-
-    const memberDoc = await MemberModel.findById(member);
-    if (!memberDoc) throw new BadRequestError("Invalid Member ID");
+    if (!leadDoc) throw new BadRequestError('Invalid Lead ID');
+    if (!memberDoc) throw new BadRequestError('Invalid Member ID');
 
     // create
     const bookTrial = await BookTrialModel.create({
@@ -39,7 +40,7 @@ const createBookTrial = async (req, res, next) => {
     await MemberModel.findByIdAndUpdate(memberDoc._id, { $push: { bookTrials: bookTrial._id } });
 
     return res.status(201).json({
-      status: true,
+      success: true,
       message: "BookTrial created successfully",
       bookTrial
     });
@@ -94,7 +95,7 @@ const deleteBookTrial = async (req, res, next) => {
     await MemberModel.findByIdAndUpdate(bookTrial.member, { $pull: { bookTrials: bookTrial._id } });
 
     return res.status(200).json({
-      status: true,
+      success: true,
       message: "BookTrial deleted successfully",
     });
   } catch (error) {

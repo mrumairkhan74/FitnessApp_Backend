@@ -1,7 +1,7 @@
 const ChatModel = require('../models/ChatModel');
 const UserModel = require('../models/UserModel');
 const { NotFoundError, BadRequestError, UnAuthorizedError } = require('../middleware/error/httpErrors')
-
+const { notifyUser } = require('../utils/NotificationService')
 
 const accessChat = async (req, res, next) => {
     try {
@@ -59,9 +59,14 @@ const createGroup = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         const { name, users } = req.body;
-        if (!name || !users) throw new BadRequestError('Fill All fields')
-        if (users.length < 2) throw new BadRequestError('More then 2 people to chat in group')
+
+        if (!name || !users) throw new BadRequestError('Fill all fields');
+        if (users.length < 2) throw new BadRequestError('At least 2 members required for a group');
+
+        // include creator in the group
         users.push(userId);
+
+        // create group
         const groupChat = await ChatModel.create({
             chatName: name,
             users,
@@ -69,16 +74,28 @@ const createGroup = async (req, res, next) => {
             groupAdmin: userId
         });
 
+        // fetch with population
         const fullGroup = await ChatModel.findById(groupChat._id)
             .populate('users', 'firstName lastName img')
             .populate('groupAdmin', 'firstName lastName img staffRole');
 
-        return res.status(200).json({ status: true, fullGroup })
+        // notify all members except the creator
+        for (const u of fullGroup.users) {
+            if (u._id.toString() !== userId.toString()) {
+                await notifyUser({
+                    userId: u._id,
+                    message: `You were added to the group "${fullGroup.chatName}"`,
+                    type: 'info'
+                });
+            }
+        }
+
+        return res.status(200).json({ status: true, fullGroup });
+
+    } catch (error) {
+        next(error);
     }
-    catch (error) {
-        next(error)
-    }
-}
+};
 
 
 // ==== Rename Group ===
@@ -116,29 +133,43 @@ const renameGroup = async (req, res, next) => {
 const addToGroup = async (req, res, next) => {
     try {
         const userId = req.user?.id;
-        const { chatId, user } = req.body;
-        const chat = await ChatModel.findById(chatId);
-        if (chat.groupAdmin.toString() !== userId) throw new UnAuthorizedError('You are UnAuthorized to add someone ')
-        const updateChat = await ChatModel.findByIdAndUpdate(
-            chatId,
-            {
-                $push: { users: user }
-            },
-            { new: true }
-        ).populate('users', 'firstName lastName img')
-            .populate('groupAdmin', 'firstName lastName img staffRole')
+        const { chatId, userIdToAdd } = req.body;
 
-        if (!updateChat) throw new BadRequestError('Invalid userId')
+        // verify chat exists
+        const chat = await ChatModel.findById(chatId);
+        if (!chat) throw new NotFoundError('Chat not found');
+
+        // only admin can add
+        if (chat.groupAdmin.toString() !== userId) {
+            throw new UnAuthorizedError('You are not authorized to add members to this group');
+        }
+
+        // add user to chat
+        const updatedChat = await ChatModel.findByIdAndUpdate(
+            chatId,
+            { $addToSet: { users: userIdToAdd } }, // $addToSet avoids duplicates
+            { new: true }
+        )
+            .populate('users', 'firstName lastName img')
+            .populate('groupAdmin', 'firstName lastName img staffRole');
+
+        if (!updatedChat) throw new BadRequestError('Invalid chat or userId');
+
+        // notify the added user
+        await notifyUser({
+            userId: userIdToAdd,
+            message: `You were added to the group "${updatedChat.chatName}"`,
+            type: 'info'
+        });
 
         return res.status(200).json({
             status: true,
-            updateChat
-        })
+            chat: updatedChat
+        });
+    } catch (error) {
+        next(error);
     }
-    catch (error) {
-        next(error)
-    }
-}
+};
 
 
 //  === Remove From Group ===

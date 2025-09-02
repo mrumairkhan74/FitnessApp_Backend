@@ -1,5 +1,4 @@
 const express = require('express')
-const router = express.Router();
 const adminRoutes = require('./AdminRoutes')
 const StaffRoutes = require('./StaffRoutes');
 const MemberRoutes = require('./MemberRoutes');
@@ -16,6 +15,11 @@ const ChatRoutes = require('./ChatRoutes');
 const MessageRoutes = require('./MessageRoutes');
 const BlockedRoutes = require('./BlockedRoutes');
 const MetaAdsRoutes = require('./MetaAdsRoutes');
+const PaymentRoutes = require('./PaymentRoutes');
+const IdlePeriodRoutes = require('./IdlePeriodRoutes');
+const NotificationRoutes = require('./NotificationRoutes');
+
+const router = express.Router();
 
 router.use('/', adminRoutes)
 router.use('/staff', StaffRoutes)
@@ -32,7 +36,10 @@ router.use('/contract', ContractRoutes)
 router.use('/chat', ChatRoutes)
 router.use('/message', MessageRoutes)
 router.use('/block', BlockedRoutes)
-router.use('/metaAds', MetaAdsRoutes)
+router.use('/metaads', MetaAdsRoutes)
+router.use('/payment', PaymentRoutes)
+router.use('/vacation', IdlePeriodRoutes)
+router.use('/notification', NotificationRoutes)
 
 
 module.exports = router

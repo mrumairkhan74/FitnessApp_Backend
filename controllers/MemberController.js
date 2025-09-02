@@ -4,7 +4,6 @@ const hashedPassword = require('../utils/HashedPassword');
 const bcrypt = require('bcryptjs');
 const { uploadToCloudinary } = require('../utils/CloudinaryUpload');
 
-
 const {
   BadRequestError,
   UnauthorizedError,
@@ -30,6 +29,7 @@ const createMember = async (req, res, next) => {
       zipCode,
       dateOfBirth,
       about,
+      memberNumber
     } = req.body;
 
     // check for duplicate email
@@ -60,6 +60,7 @@ const createMember = async (req, res, next) => {
       dateOfBirth,
       about,
       email,
+      memberNumber,
       password: securePassword,
       img: {
         url: cloudinaryResult.secure_url,

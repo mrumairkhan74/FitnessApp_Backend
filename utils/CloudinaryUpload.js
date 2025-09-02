@@ -1,6 +1,9 @@
 const cloudinary = require("./Cloudinary");
 const { Readable } = require("stream");
 
+
+// --- Profile Images ---
+
 const uploadToCloudinary = (fileBuffer, folder = "Timathy/profiles") => {
   return new Promise((resolve, reject) => {
     const bufferStream = new Readable();
@@ -18,6 +21,9 @@ const uploadToCloudinary = (fileBuffer, folder = "Timathy/profiles") => {
     bufferStream.pipe(stream);
   });
 };
+
+// --- upload products and services ---
+
 const uploadProduct = (fileBuffer, folder = "Timathy/sellings") => {
   return new Promise((resolve, reject) => {
     const bufferStream = new Readable();
@@ -35,6 +41,31 @@ const uploadProduct = (fileBuffer, folder = "Timathy/sellings") => {
     bufferStream.pipe(stream);
   });
 };
+
+// --- Idle Period Document Upload
+
+const uploadIdlePeriod = (fileBuffer, folder = "Timathy/vacation") => {
+  return new Promise((resolve, reject) => {
+    const bufferStream = new Readable();
+    bufferStream.push(fileBuffer);
+    bufferStream.push(null);
+
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: "raw" },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    bufferStream.pipe(stream);
+  });
+};
+
+
+
+// --- Contract Upload to Cloudinary ---
+
 const uploadContract = (fileBuffer, fileName, folder = "Timathy/contracts") => {
   return new Promise((resolve, reject) => {
     const bufferStream = new Readable();
@@ -42,7 +73,7 @@ const uploadContract = (fileBuffer, fileName, folder = "Timathy/contracts") => {
     bufferStream.push(null);
 
     const stream = cloudinary.uploader.upload_stream(
-        {
+      {
         folder,
         resource_type: "raw",
         type: "upload",
@@ -67,4 +98,4 @@ const uploadContract = (fileBuffer, fileName, folder = "Timathy/contracts") => {
 };
 
 
-module.exports = { uploadToCloudinary, uploadProduct, uploadContract };
+module.exports = { uploadToCloudinary, uploadProduct, uploadContract, uploadIdlePeriod };

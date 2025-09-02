@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const contractSchema = new mongoose.Schema({
-    
+
     rateType: {
         type: String,
         enum: ['basic', 'premium', 'bronze'],
@@ -164,8 +164,28 @@ const contractSchema = new mongoose.Schema({
     lead: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Lead"
-    }
+    },
+    member: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'member'
+    },
+    status: { type: String, enum: ['Active', 'Cancelled', 'Pending Cancellation'], default: 'Active' },
+    lastCancellationDate: { type: Date },
+    cancellationEffectiveDate: { type: Date },
 
+    signature: {
+        type: String
+    },
+    signedAt: {
+        type: Date
+    },
+
+
+    // Payment
+    payment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Payment'
+    }
 })
 
 
